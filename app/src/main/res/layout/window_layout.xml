@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:background="@color/purple_500"
+    android:alpha="0.3">
+
+    <Button
+        android:id="@+id/btn_window"
+        android:text="Button1 for test"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"/>
+
+    <Button
+        android:id="@+id/btn_hide"
+        android:text="Hide Button"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"/>
+
+    <HorizontalScrollView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:scrollbars="none">
+        <TextView
+            android:id="@+id/text_window"
+            android:textIsSelectable="true"
+            android:layout_width="wrap_content"
+            android:layout_height="match_parent"
+            android:text="@string/many_letters"/>
+    </HorizontalScrollView>
+
+</LinearLayout>

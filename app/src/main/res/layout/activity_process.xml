@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/root_process"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/teal_200"
+    android:clickable="true"
+    android:focusable="true"
+    android:orientation="vertical">
+
+    <Button
+        android:id="@+id/btn_process"
+        android:layout_width="200dp"
+        android:layout_height="50dp"
+        android:text="Test sub process" />
+
+    <ToggleButton
+        android:id="@+id/toggle"
+        android:layout_width="200dp"
+        android:layout_height="50dp"
+        android:layout_marginTop="20dp"
+        android:textOff="OFF"
+        android:textOn="ON" />
+
+    <Switch
+        android:id="@+id/switch_sub_process"
+        android:layout_width="200dp"
+        android:layout_height="50dp"
+        android:layout_marginTop="20dp"
+        android:text="Switch Test" />
+
+    <FrameLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_weight="1">
+
+        <TextView
+            android:id="@+id/btn_finish"
+            android:layout_width="200dp"
+            android:layout_height="20dp"
+            android:layout_gravity="bottom"
+            android:layout_marginTop="5dp"
+            android:gravity="bottom"
+            android:paddingBottom="1dp"
+            android:text="finish sub process" />
+    </FrameLayout>
+
+</LinearLayout>
