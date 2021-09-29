@@ -71,7 +71,6 @@ public class MainActivity extends AppCompatActivity {
             mWindowLayoutParams.type = WindowManager.LayoutParams.TYPE_PHONE;
         }
         mWindowLayoutParams.flags |=  WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL;
-        mWindowLayoutParams.flags |=  WindowManager.LayoutParams.FLAG_WATCH_OUTSIDE_TOUCH;
         mWindowLayoutParams.flags |= WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE;
         mWindowLayoutParams.format = PixelFormat.TRANSLUCENT;
         mWindowLayoutParams.height = 1800;
