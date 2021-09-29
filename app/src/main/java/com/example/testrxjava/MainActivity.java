@@ -7,6 +7,7 @@ import android.content.ClipboardManager;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.graphics.PixelFormat;
 import android.os.Build;
 import android.os.Bundle;
 import android.util.Log;
@@ -14,7 +15,6 @@ import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.View;
-import android.view.ViewGroup;
 import android.view.WindowManager;
 import android.widget.Button;
 import android.widget.ListView;
@@ -24,17 +24,15 @@ import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
 
-import java.lang.reflect.Field;
-import java.lang.reflect.Method;
 import java.util.ArrayList;
 
 public class MainActivity extends AppCompatActivity {
     private Button mButton;
     private Button mHide;
     private BroadcastReceiver mReceiver;
-    private PopupWindow mWindow;
-    private View mWindowView;
-    private View mRootView;
+    private WindowManager mWindowManager;
+    private WindowManager.LayoutParams mWindowLayoutParams = new WindowManager.LayoutParams();
+    private MyLinearLayout mWindowView;
     private ClipboardManager mClipboardManager;
 
     @SuppressLint("ClickableViewAccessibility")
@@ -60,120 +58,77 @@ public class MainActivity extends AppCompatActivity {
 
         mClipboardManager = (ClipboardManager) getSystemService(Context.CLIPBOARD_SERVICE);
 
-        mWindow = new PopupWindow(this);
-        mWindowView = LayoutInflater.from(this).inflate(R.layout.window_layout, null);
+
+        mWindowView = (MyLinearLayout) LayoutInflater.from(this).inflate(R.layout.window_layout, null);
+        mWindowView.setActivity(this);
+        mWindowManager = getWindowManager();
+        mWindowLayoutParams.gravity = Gravity.START;
+        mWindowLayoutParams.x = 0;
+        mWindowLayoutParams.y = 0;
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            mWindowLayoutParams.type = WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY;
+        } else {
+            mWindowLayoutParams.type = WindowManager.LayoutParams.TYPE_PHONE;
+        }
+        mWindowLayoutParams.flags |=  WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL;
+        mWindowLayoutParams.flags |=  WindowManager.LayoutParams.FLAG_WATCH_OUTSIDE_TOUCH;
+        mWindowLayoutParams.flags |= WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE;
+        mWindowLayoutParams.format = PixelFormat.TRANSLUCENT;
+        mWindowLayoutParams.height = 1800;
+        mWindowLayoutParams.width = WindowManager.LayoutParams.WRAP_CONTENT;
+        mWindowView.setOnTouchListener(new View.OnTouchListener() {
+            @Override
+            public boolean onTouch(View v, MotionEvent event) {
+                int[] popupLocation = new int[2];
+                mWindowView.getLocationOnScreen(popupLocation);
+                View target = Utils.getViewTouchedByEvent(mWindowView, event);
+
+                if (target != null) {
+                    target.dispatchTouchEvent(event);
+                    return true;
+                }
+
+                event.offsetLocation(popupLocation[0], popupLocation[1]);
+                MainActivity.this.dispatchTouchEvent(event);
+                return false;
+            }
+        });
+        mWindowLayoutParams.softInputMode = WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE;
 
         mButton = mWindowView.findViewById(R.id.btn_window);
-        mButton.setOnClickListener(view -> {
-            startActivity(new Intent(MainActivity.this, ProcessActivity.class));
-        });
+        mButton.setOnClickListener(v -> Toast.makeText(MainActivity.this,
+                "Button in window has been clicked.", Toast.LENGTH_SHORT).show());
 
         mHide = mWindowView.findViewById(R.id.btn_hide);
         mHide.setOnClickListener(v -> {
             mButton.setVisibility(mButton.getVisibility() == View.VISIBLE ? View.GONE : View.VISIBLE);
         });
-        mWindowView.findViewById(R.id.text_window).setOnLongClickListener(new View.OnLongClickListener() {
-            @Override
-            public boolean onLongClick(View v) {
-                ClipData data = ClipData.newPlainText("NormalItem", ((TextView) v).getText());
-                mClipboardManager.setPrimaryClip(data);
-                Toast.makeText(MainActivity.this, "Content copied", Toast.LENGTH_SHORT).show();
-                return true;
-            }
+        mWindowView.findViewById(R.id.text_window).setOnLongClickListener(v -> {
+            ClipData data = ClipData.newPlainText("NormalItem", ((TextView) v).getText());
+            mClipboardManager.setPrimaryClip(data);
+            Toast.makeText(MainActivity.this, "Content copied", Toast.LENGTH_SHORT).show();
+            return true;
         });
-
-        mWindow.setTouchInterceptor((view, motionEvent) -> {
-            int[] popupLocation = new int[2];
-            mWindowView.getLocationOnScreen(popupLocation);
-            View target = Utils.getViewTouchedByEvent(mWindowView, motionEvent);
-
-            if (target != null) {
-                mWindowView.dispatchTouchEvent(motionEvent);
-                return true;
-            }
-
-            motionEvent.offsetLocation(popupLocation[0], popupLocation[1]);
-            MainActivity.this.dispatchTouchEvent(motionEvent);
-            return false;
-        });
-
-        mRootView = getWindow().getDecorView();
-        mWindow.setOutsideTouchable(false);
-        mWindow.setInputMethodMode(PopupWindow.INPUT_METHOD_NEEDED);
-        mWindow.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE);
-
-        mWindow.setContentView(mWindowView);
-        mWindow.setWidth(ViewGroup.LayoutParams.MATCH_PARENT);
-        mWindow.setHeight(1800);
 
         findViewById(R.id.root).setOnClickListener(v -> {
             Log.i("MainActivity", "Touch event gets to text view!");
         });
-
-//        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-//            mWindow.setWindowLayoutType(WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY);
-//        }
-
-        mReceiver = new BroadcastReceiver() {
-            @Override
-            public void onReceive(Context context, Intent intent) {
-                if (intent.getAction().equals("TouchEvent")) {
-                    MotionEvent event = intent.getParcelableExtra("event");
-                    if (event == null) {
-                        return;
-                    }
-
-                    Bundle bundle = intent.getBundleExtra("bundle");
-                    if (bundle == null) {
-                        return;
-                    }
-
-                    int[] subProcessArray = bundle.getIntArray("sub_process_location");
-
-                    if (subProcessArray == null) {
-                        return;
-                    }
-
-                    try {
-                        Class popupClass = Class.forName("android.widget.PopupWindow");
-                        Field decorViewField = popupClass.getDeclaredField("mDecorView");
-                        decorViewField.setAccessible(true);
-                        Object decorView = decorViewField.get(mWindow);
-
-                        int[] popupLocation = new int[2];
-                        mWindowView.getLocationOnScreen(popupLocation);
-                        event.offsetLocation(subProcessArray[0] - popupLocation[0], subProcessArray[1] - popupLocation[1]);
-
-                        Method dispatchTouchEvent = decorView.getClass().getDeclaredMethod("dispatchTouchEvent", MotionEvent.class);
-                        dispatchTouchEvent.invoke(decorView, event);
-                    } catch (Exception e) {
-                        e.printStackTrace();
-                    }
-                }
-            }
-        };
-
-        IntentFilter filter = new IntentFilter("TouchEvent");
-        registerReceiver(mReceiver, filter);
     }
 
     @Override
     protected void onStop() {
         super.onStop();
-        mWindow.dismiss();
+        mWindowManager.removeView(mWindowView);
     }
 
     @Override
     protected void onResume() {
         super.onResume();
-        mRootView.post(() -> {
-            mWindow.showAtLocation(mRootView, Gravity.START, 0, 0);
-        });
+        mWindowManager.addView(mWindowView, mWindowLayoutParams);
     }
 
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        unregisterReceiver(mReceiver);
     }
 }
