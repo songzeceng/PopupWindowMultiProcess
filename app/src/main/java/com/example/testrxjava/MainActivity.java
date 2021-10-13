@@ -80,12 +80,6 @@ public class MainActivity extends AppCompatActivity {
             public boolean onTouch(View v, MotionEvent event) {
                 int[] popupLocation = new int[2];
                 mWindowView.getLocationOnScreen(popupLocation);
-                View target = Utils.getViewTouchedByEvent(mWindowView, event);
-
-                if (target != null) {
-                    target.dispatchTouchEvent(event);
-                    return true;
-                }
 
                 event.offsetLocation(popupLocation[0], popupLocation[1]);
                 MainActivity.this.dispatchTouchEvent(event);
